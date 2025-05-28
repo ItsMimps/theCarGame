@@ -16,16 +16,17 @@ game_icon = pygame.image.load('car_image.png')
 pygame.display.set_icon(game_icon)
 
 #Position of the car
-x_position, y_position = 400, 320
+x_position = 300
+y_position = screen_height - 100
 
 #loading in the image
 background = pygame.image.load('racing_track.png')
 background = pygame.transform.scale(background, (screen_width, screen_height))
 background_height = background.get_height()
-players_car = pygame.transform.scale(pygame.image.load('car_1.png'),(48, 64))
+players_car = pygame.transform.scale(pygame.image.load('car_1.png'),(60, 80))
 
 # Instansiate the rectangle for the car
-players_car_rect = players_car.get_rect(center=(x_position, y_position))
+players_car_rect = players_car.get_rect(topleft = (x_position, y_position))
 
 # Define game variables
 scroll = 0
