@@ -33,29 +33,30 @@ scroll = 0
 speed = 3
 
 #Game loop
-run = True
-while run:
+def game_loop():
+    run = True
+    while run:
 
-    clock.tick(FPS)
+        clock.tick(FPS)
 
-    # Draw the scrolling background
-    for i in range(-1, 2):
-        screen.blit(background, (0, i*background_height + scroll))
+        # Draw the scrolling background
+        for i in range(-1, 2):
+            screen.blit(background, (0, i*background_height + scroll))
 
-    # Scroll background
-    scroll += speed
+        # Scroll background
+        scroll += speed
 
-    #reset the scroll
-    if abs(scroll) >= background_height:
-        scroll = 0
+        #reset the scroll
+        if abs(scroll) >= background_height:
+            scroll = 0
 
-    #how to quit
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
+        #how to quit
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
 
-    screen.blit(players_car, players_car_rect)
-    pygame.display.update()
+        screen.blit(players_car, players_car_rect)
+        pygame.display.update()
 
-pygame.quit()
+    pygame.quit()
 
