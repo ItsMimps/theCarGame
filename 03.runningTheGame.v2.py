@@ -38,7 +38,10 @@ players_car_rect = players_car.get_rect(topleft = (x_position, y_position))
 
 # Define game variables
 scroll = 0
-bg_speed = 3
+car_speed = 0
+acceleration = 0.2
+max_speed = 10
+deceleration = 0.1
 
 #Game loop
 run = True
@@ -54,8 +57,13 @@ while run:
     #check if the up, left or right keys are pressed
     keys = pygame.key.get_pressed()
     if keys[up_key]:
-        scroll += scroll + 0.000001
-    elif keys[right_key]:
+        car_speed = min(car_speed + acceleration, max_speed)
+    else:
+        #decelerate when the up kwy is not pressed
+        if car_speed > 0:
+            car_speed = max(car_speed - deceleration, 0)
+
+    if keys[right_key]:
         direction = 0
     elif keys[left_key]:
         direction = 180
@@ -63,7 +71,7 @@ while run:
         direction = None #stop the movement if NO keys are pressed
 
     # update the position of the car based in the direction and speed of the car
-    if direction is not None:
+    if direction is not None and car_speed > 0:
         dx = speed * math.cos(math.radians(direction))
         dy = -speed * math.sin(math.radians(direction))
 
@@ -85,7 +93,7 @@ while run:
         screen.blit(background, (0,i * background_height + scroll))
 
     # scroll background
-    scroll += bg_speed
+    scroll += car_speed
 
     #reset the scroll
     if scroll>= background_height:
@@ -95,12 +103,3 @@ while run:
     screen.blit(players_car, players_car_rect)
     pygame.display.update()
 pygame.quit()
-
-
-
-
-
-
-
-
-
