@@ -21,6 +21,8 @@ x_position = 300
 y_position = screen_height - 100
 speed = 5
 direction = 0
+racing_track_right_border = 670
+racing_track_left_border = 130
 
 #setting up the keyboard keys that can control the car
 up_key = pygame.K_UP
@@ -79,10 +81,11 @@ while run:
         players_car_rect.y += dy
 
     #keep the car within the screen boundries
-    if players_car_rect.left < 0:
-        players_car_rect.left = 0
-    elif players_car_rect.right > screen_width:
-        players_car_rect.right = screen_width
+    if players_car_rect.left < racing_track_left_border:
+        players_car_rect.left = racing_track_left_border
+    elif players_car_rect.right > racing_track_right_border:
+        players_car_rect.right = racing_track_right_border
+
     if players_car_rect.top < 0:
         players_car_rect.top = 0
     elif players_car_rect.bottom > screen_height:
