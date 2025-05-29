@@ -138,7 +138,7 @@ class Game:
                 self.game_over()
 
     def game_over(self):
-        self.screen.fill((black)) #fill the screen with a black background
+        self.screen.fill(black) #fill the screen with a black background
 
         game_over_text = font.render('Game Over! Press ESC to Exit', True, white)
         self.screen.blit(game_over_text, (screen_width // 2 - 150, screen_height // 2 - 20))
