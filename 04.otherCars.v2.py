@@ -13,8 +13,16 @@ screen_height = 600
 racing_track_right_border = 610
 racing_track_left_border = 130
 max_lanes = 4 #maxiumum number of lanes occupied at once
-min_distance = 60 #this is the minumum spawn distance between SPAWN cars
-max_attempts = 100 # limit the number of attempts to find a valid spawn position (to not crash)
+car_images = ['car_2.png', 'car_3.png', 'car_4.png', 'car_5.png', 'car_6.png']
+
+#defining the x co-ordinates for the lanes on the racing track
+fixed_x_positions = [
+    150, #lane one
+    250, #lane two
+    350, #lane three
+    450, #lane four
+    550 #lane five
+]
 
 class Car:
     def __init__(self, x_position, y_position):
@@ -63,25 +71,10 @@ class Car:
 
 
 class OpposingCar:
-    def __init__(self, existing_cars):
-        self.spawn_new_car(existing_cars) #call the method to initialize car properties
-        self.speed = random.randint(3, 6) #initialize speed here
-
-    def spawn_new_car(self, existing_cars):
-        extra_cars_list = ['car_2.png', 'car_3.png', 'car_4.png', 'car_5.png', 'car_6.png']
-        self.image = pygame.transform.scale(pygame.image.load(random.choice(extra_cars_list)), (60, 80))
-
-        #randomly choose an x position within the track boundries
-        for _ in range(max_attempts):
-            x_position = random.randint(racing_track_left_border, racing_track_right_border)
-            self.rect = self.image.get_rect(topleft=(x_position, -80)) #set the rectangle position AND start from off screen area
-
-            #check for minimum spawn distance
-            if all(abs(self.rect.x - car.rect.x) >= min_distance for car in existing_cars):
-                return # position is valid
-
-            #if we exceed max attempts, just position it randomly (could be improved further)
-            self.rect = self.image.get_rect(topleft=(x_position, -80))
+    def __init__(self, lane_position):
+        self.speed = random.randint(3, 6) #random speed assigned to the cars
+        self.image = pygame.transform.scale(pygame.image.load(random.choice(car_images)), (60, 80))
+        self.rect = self.image.get_rect(topleft=(lane_position, random.randint(-150, -100))) #spawning completely off the screen and then they load in
 
     def update(self, player_speed):
         #moving the NPC cars down the screen only if players car is moving forewards
@@ -95,6 +88,11 @@ class OpposingCar:
         if self.rect.top > screen_height:
             return True #indicate that a car needs to respawn
         return False
+
+    def respawn(self, lane_position):
+        self.speed = random.randint(3,6) #assign a new random speed on respawn
+        self.image = pygame.transform.scale(pygame.image.load(random.choice(car_images)), (60, 80)) #assign a new random car image on respawn
+        self.rect.topleft = (lane_position, random.randint(-150, -100)) #respawn COMPLETELY off the screen
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
@@ -111,7 +109,18 @@ class Game:
         self.car = Car(300, screen_height - 100) #this positions the car on the secound lane to the left to start
 
         # Initialize NPC cars
-        self.opposing_cars = [OpposingCar([]) for _ in range(5)] # create multiple NPC cars
+        self.opposing_cars = []
+        self.lane_occupancy ={} #this is used to track the lanes that are being occupied
+
+        self.create_opposing_cars()
+
+    def create_opposing_cars(self):
+        selected_lanes = random.sample(fixed_x_positions, max_lanes) #select UP TO four lanes
+
+        for lane_position in selected_lanes:
+            opposing_car = OpposingCar(lane_position) #create a car in the selected lane
+            self.opposing_cars.append(opposing_car)
+            self.lane_occupancy[lane_position] = opposing_car #mark the lane as occupied
 
     def run(self):
         while True:
@@ -122,8 +131,21 @@ class Game:
 
             #update NPC cars and check for new spawning ones
             for opposing_car in self.opposing_cars:
-                if opposing_car.update(self.car.speed): #players speed to opposing car
-                    opposing_car.spawn_new_car(self.opposing_cars) #respawn with NEW properties
+                if opposing_car.update(self.car.speed):  # players speed to opposing car
+
+                # find a new lane for respawn
+                    new_lane_position = random.choice(fixed_x_positions)
+                    while new_lane_position in self.lane_occupancy: #ensure that the lane is free
+                        new_lane_position = random.choice(fixed_x_positions)
+
+                    opposing_car.respawn(new_lane_position) #respawn in a new lane
+                    self.lane_occupancy[new_lane_position] = opposing_car #update lane occupancy
+
+                    #remove the old lane from occupancy
+                    for lane in list(self.lane_occupancy):
+                        if self.lane_occupancy[lane] == opposing_car:
+                            del self.lane_occupancy[lane]
+                            break
 
             self.scroll_background()
             self.draw()
