@@ -29,6 +29,32 @@ font = pygame.font.Font(None, 36)
 white = (255, 255, 255)
 black = (0, 0, 0)
 
+#function to keep track of the highest score - writes value to a file
+def load_high_score():
+    try:
+        hi_score_file = open('HI_score.txt', 'r')
+    except IOError:
+        hi_score_file = open('HI_score.txt', 'w')
+        hi_score_file.write('0')
+    hi_score_file = open('HI_score.txt', 'r')
+    value = hi_score_file.read()
+    hi_score_file.close()
+
+    return value
+
+#function to update record of the highest score
+def update_high_score(score, high_score):
+    if int(score) > int(high_score):
+        return score
+    else:
+        return high_score
+
+#save updated hgh score if player beats it
+def save_high_score(high_score):
+    high_score_file = open('HI_score.txt', 'w')
+    high_score_file.write(str(high_score))
+    high_score_file.close()
+
 class Car:
     def __init__(self, x_position, y_position):
         self.image = pygame.transform.scale(pygame.image.load('car_1.png'), (60, 80))
@@ -102,6 +128,7 @@ class OpposingCar:
 
 class Game:
     def __init__(self):
+        self.high_score = load_high_score()
         self.screen = pygame.display.set_mode((screen_width, screen_height))
         pygame.display.set_caption('Racing Game by Millie Young')
         game_icon = pygame.image.load('car_image.png')
@@ -183,11 +210,18 @@ class Game:
                         return #AKA resume game
 
     def game_over(self):
+        self.high_score = update_high_score()
         self.screen.fill(black) #fill the screen with a black background
+
         game_over_text = font.render('Game Over!', True, white)
+        score_text = font.render(f'Score: {self.score}', True, white)
+        high_score_text = font.render(f'High Score: {self.high_score}', True, white)
         instructions_text = font.render('Press R to Restart or Q to Quit', True, white) #added in the RESTART instructions :)
+
         self.screen.blit(game_over_text, (screen_width // 2 - 70, screen_height // 2 - 20))
         self.screen.blit(instructions_text, (screen_width // 2 - 180, screen_height // 2 + 10))
+        self.screen.blit(high_score_text, (screen_width // 2- 90, screen_height // 2))
+        self.screen.blit(score_text, (screen_width // 2 - 70, screen_height // 2 -30))
         pygame.display.update()
 
 
@@ -223,10 +257,12 @@ class Game:
         for opposing_car in self.opposing_cars:
             opposing_car.draw(self.screen)
 
-        #draw score with background
-        pygame.draw.rect(self.screen, black, (0, 0, 130, 40)) #black rectangle
+        #drawing the high score and score on the screen
+        pygame.draw.rect(self.screen, black, (0, 0, 200, 40)) # adjusted width
         score_text = font.render(f'Score: {self.score}', True, white)
+        high_score_text = font.render(f'High: {self.high_score}', True, white)
         self.screen.blit(score_text, (5, 10))
+        self.screen.blit(high_score_text, (100, 10))
 
 
 if __name__ == "__main__":
