@@ -3,16 +3,16 @@ import math
 import sys
 import random
 
-#initialize pygame
+# Initialize pygame
 pygame.init()
 
-#constants through gameplay
+# Constants through gameplay
 FPS = 60
 screen_width = 800
 screen_height = 600
 racing_track_right_border = 670
 racing_track_left_border = 130
-max_lanes = 4 # The maxiumum number of lanes to be occupied at once (to make sure that the players car can ALWAYS get past
+max_lanes = 4 # The maximum number of lanes to be occupied at once (to make sure that the players car can ALWAYS get past
 car_images = ['car_2.png', 'car_3.png', 'car_4.png', 'car_5.png', 'car_6.png']
 
 # Defining the x co-ordinates for the lanes on the racing track
@@ -29,7 +29,7 @@ font = pygame.font.Font(None, 36)
 white = (255, 255, 255)
 black = (0, 0, 0)
 
-# This is the function to keep track of the highest score - writes value to a file
+# Load the high score from a file, or set to 0 if file not found
 def load_high_score():
     file_path = '../../Assessment/theCarGame/HI_score.txt'
 
@@ -40,7 +40,6 @@ def load_high_score():
         with open(file_path, 'w') as hi_score_file:
             hi_score_file.write('0')
         value = '0' # Default high score if the file does not exist is ZERO
-
     return value
 
 # This is a function to update the record of the highest score
@@ -67,6 +66,7 @@ class Car:
         self.deceleration = 0.1
         self.direction = 0
 
+    # This updates the car's position based on the keys
     def update(self, keys):
         if keys[pygame.K_UP]:
             self.speed = min(self.speed +self.acceleration, self.max_speed)
@@ -88,22 +88,25 @@ class Car:
 
         self.keep_within_bounds()
 
+    # This piece of code prevents the car from moving off of the screen
     def keep_within_bounds(self):
         self.rect.left = max(self.rect.left, racing_track_left_border)
         self.rect.right = min(self.rect.right, racing_track_right_border)
         self.rect.top = max(self.rect.top, 0)
         self.rect.bottom = min(self.rect.bottom, screen_height)
 
+    # This piece of code draws the car on the screen
     def draw(self, surface):
         surface.blit(self.image, self.rect)
 
-# This is the opposing car class
+# This is the opposing NPC car class
 class OpposingCar:
     def __init__(self, lane_position):
         self.speed = random.randint(3, 6) # Assigns a random speed to the cars (range of 3 - 6)
         self.image = pygame.transform.scale(pygame.image.load(random.choice(car_images)), (60, 80))
         self.rect = self.image.get_rect(topleft=(lane_position, random.randint(-150, -100))) # Positioned os that the new cars are spawning completely off the screen and THEN load in
 
+    # Move the NPC cars depending on the players movement
     def update(self, player_speed):
         # Moving the NPC cars down the screen ONLY if players car is moving forewords
         if player_speed > 0:
@@ -117,18 +120,18 @@ class OpposingCar:
             return True # Indicate that a car needs to respawn
         return False
 
+    # Respawn the NPC car in the new lane
     def respawn(self, lane_position):
         self.speed = random.randint(3, 6) # Assign the new car a random speed
-
         selected_image = random.choice(car_images)
         self.image = pygame.transform.scale(pygame.image.load(selected_image), (60, 80))
-
         self.rect.topleft = (lane_position, random.randint(-150, -100)) # Respawn COMPLETELY off the screen
 
+    # Draw the NPC car on the screen
     def draw(self, surface):
         surface.blit(self.image, self.rect)
 
-# This is the MAIN game loop
+# This is the MAIN game class
 class Game:
     def __init__(self):
         self.high_score = load_high_score()
@@ -148,6 +151,7 @@ class Game:
 
         self.create_opposing_cars()
 
+    # Create up to four NPC cars in random lanes
     def create_opposing_cars(self):
         selected_lanes = random.sample(fixed_x_positions, max_lanes) # Select UP TO four lanes
         for lane_position in selected_lanes:
@@ -155,21 +159,17 @@ class Game:
             self.opposing_cars.append(opposing_car)
             self.lane_occupancy[lane_position] = opposing_car # Mark the lane as occupied
 
+    # Main game loop
     def run(self):
         while True:
             self.clock.tick(FPS)
             self.handle_events()
             keys = pygame.key.get_pressed()
             self.car.update(keys)
-
-            # Check for collisions
             self.check_collisions()
 
-            # Update opposing cars
             for opposing_car in self.opposing_cars:
                 if opposing_car.update(self.car.speed):
-
-                    # Remove the old lane from occupancy
                     for lane, car in list(self.lane_occupancy.items()):
                         if car == opposing_car:
                             del self.lane_occupancy[lane]
@@ -188,11 +188,13 @@ class Game:
             self.draw()
             pygame.display.update() # Making sure that the display is UPDATED
 
+    # Detect player collision with any NPC car
     def check_collisions(self):
         for opposing_car in self.opposing_cars:
             if self.car.rect.colliderect(opposing_car.rect):
                 self.game_over()
 
+    # Pause menu screen
     def pause_menu(self):
         self.screen.fill(black)
         pause_text = font.render('Game Paused', True, white)
@@ -213,6 +215,7 @@ class Game:
                     elif event.key == pygame.K_r:
                         return # AKA resume game
 
+    # Game over screen
     def game_over(self):
         self.high_score = update_high_score(self.score, self.high_score)
         save_high_score(self.high_score)
@@ -255,16 +258,19 @@ class Game:
                         Game().run() # This means that the game will restart
                         return
 
+    # Handle quit events
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.pause_menu() # Refer to pause menu for next option instead of just quit
 
+    # Scroll the background VERTICALLY
     def scroll_background(self):
         self.scroll += self.car.speed
         if self.scroll >= self.background.get_height():
             self.scroll = 0
 
+    # Draw all game elements on screen
     def draw(self):
         for i in [-1, 0, 1]:
             self.screen.blit(self.background, (0, i * self.background.get_height() + self.scroll))
@@ -300,7 +306,7 @@ class Game:
             box_width = max(game_instructions_width, accelerate_instructions_width)
             box_x = (screen_width - box_width) // 2
             box_y1 = screen_height - 140 # This is for the first line
-            box_y2 = box_y1 + box_height + 10 # Secounds line, spaced below the first
+            box_y2 = box_y1 + box_height + 10 # Seconds line, spaced below the first
 
             # Draw the black rectangle bases
             pygame.draw.rect(self.screen, black, (box_x, box_y1, box_width, box_height))
@@ -310,5 +316,6 @@ class Game:
             self.screen.blit(game_instructions, (box_x + 10, box_y1 + 5))
             self.screen.blit(accelerate_instructions, (box_x +10, box_y2 +5))
 
+# Start the game
 if __name__ == "__main__":
     Game().run()
