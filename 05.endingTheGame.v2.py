@@ -10,7 +10,7 @@ pygame.init()
 FPS = 60
 screen_width = 800
 screen_height = 600
-racing_track_right_border = 610
+racing_track_right_border = 670
 racing_track_left_border = 130
 max_lanes = 4 #maxiumum number of lanes occupied at once
 car_images = ['car_2.png', 'car_3.png', 'car_4.png', 'car_5.png', 'car_6.png']
@@ -90,8 +90,11 @@ class OpposingCar:
         return False
 
     def respawn(self, lane_position):
-        self.speed = random.randint(3,6) #assign a new random speed on respawn
-        self.image = pygame.transform.scale(pygame.image.load(random.choice(car_images)), (60, 80)) #assign a new random car image on respawn
+        self.speed = random.randint(3, 6) #assign the new car a random speed
+
+        selected_image = random.choice(car_images)
+        self.image = pygame.transform.scale(pygame.image.load(selected_image), (60, 80))
+
         self.rect.topleft = (lane_position, random.randint(-150, -100)) #respawn COMPLETELY off the screen
 
     def draw(self, surface):
@@ -132,6 +135,28 @@ class Game:
             #check for collisions
             self.check_collisions()
 
+            #update opposing cars
+            for opposing_car in self.opposing_cars:
+                if opposing_car.update(self.car.speed):
+                    #remove the old lane from occumapncy
+                    for lane, car in list(self.lane_occupancy.items()):
+                        if car == opposing_car:
+                            del self.lane_occupancy[lane]
+                            break
+
+                    #find a NEW free lane
+                    available_lanes = [lane for lane in fixed_x_positions if lane not in self.lane_occupancy]
+                    if available_lanes:
+                        new_lane_position = random.choice(available_lanes)
+                        opposing_car.respawn(new_lane_position)
+                        self.lane_occupancy[new_lane_position] = opposing_car
+                        self.score += 1
+
+            #make the backgroundd sroll and draw the normal setting etc
+            self.scroll_background()
+            self.draw()
+            pygame.display.update() #making sure that the display is UPDATED
+
     def check_collisions(self):
         for opposing_car in self.opposing_cars:
             if self.car.rect.colliderect(opposing_car.rect):
@@ -143,6 +168,16 @@ class Game:
         game_over_text = font.render('Game Over! Press ESC to Exit', True, white)
         self.screen.blit(game_over_text, (screen_width // 2 - 150, screen_height // 2 - 20))
         pygame.display.update()
+
+        waiting = True
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
 
         while True:
             for event in pygame.event.get():

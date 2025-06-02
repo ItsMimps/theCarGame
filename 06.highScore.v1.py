@@ -10,7 +10,7 @@ pygame.init()
 FPS = 60
 screen_width = 800
 screen_height = 600
-racing_track_right_border = 610
+racing_track_right_border = 670
 racing_track_left_border = 130
 max_lanes = 4 #maxiumum number of lanes occupied at once
 car_images = ['car_2.png', 'car_3.png', 'car_4.png', 'car_5.png', 'car_6.png']
@@ -90,8 +90,11 @@ class OpposingCar:
         return False
 
     def respawn(self, lane_position):
-        self.speed = random.randint(3,6) #assign a new random speed on respawn
-        self.image = pygame.transform.scale(pygame.image.load(random.choice(car_images)), (60, 80)) #assign a new random car image on respawn
+        self.speed = random.randint(3, 6) #assign the new car a random speed
+
+        selected_image = random.choice(car_images)
+        self.image = pygame.transform.scale(pygame.image.load(selected_image), (60, 80))
+
         self.rect.topleft = (lane_position, random.randint(-150, -100)) #respawn COMPLETELY off the screen
 
     def draw(self, surface):
@@ -132,23 +135,79 @@ class Game:
             #check for collisions
             self.check_collisions()
 
+            #update opposing cars
+            for opposing_car in self.opposing_cars:
+                if opposing_car.update(self.car.speed):
+                    #remove the old lane from occumapncy
+                    for lane, car in list(self.lane_occupancy.items()):
+                        if car == opposing_car:
+                            del self.lane_occupancy[lane]
+                            break
+
+                    #find a NEW free lane
+                    available_lanes = [lane for lane in fixed_x_positions if lane not in self.lane_occupancy]
+                    if available_lanes:
+                        new_lane_position = random.choice(available_lanes)
+                        opposing_car.respawn(new_lane_position)
+                        self.lane_occupancy[new_lane_position] = opposing_car
+                        self.score += 1
+
+            #make the backgroundd sroll and draw the normal setting etc
+            self.scroll_background()
+            self.draw()
+            pygame.display.update() #making sure that the display is UPDATED
+
     def check_collisions(self):
         for opposing_car in self.opposing_cars:
             if self.car.rect.colliderect(opposing_car.rect):
                 self.game_over()
 
-    def game_over(self):
-        self.screen.fill((black)) #fill the screen with a black background
-
-        game_over_text = font.render('Game Over! Press ESC to Exit', True, white)
-        self.screen.blit(game_over_text, (screen_width // 2 - 150, screen_height // 2 - 20))
+    def pause_menu(self):
+        self.screen.fill(black)
+        pause_text = font.render('Game Paused', True, white)
+        instructions_pause_text = font.render('Press R to resume or Q to Quit', True, white)
+        self.screen.blit(pause_text, (screen_width // 2 - 80, screen_height // 2 - 40)) #double dash mean divide to the nearesy whole number
+        self.screen.blit(instructions_pause_text, (screen_width // 2 - 180, screen_height // 2 + 10))
         pygame.display.update()
+
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_q:
+                        pygame.quit()
+                        sys.exit()
+                    elif event.key == pygame.K_r:
+                        return #AKA resume game
+
+    def game_over(self):
+        self.screen.fill(black) #fill the screen with a black background
+        game_over_text = font.render('Game Over!', True, white)
+        instructions_text = font.render('Press R to Restart or Q to Quit', True, white) #added in the RESTART instructions :)
+        self.screen.blit(game_over_text, (screen_width // 2 - 70, screen_height // 2 - 20))
+        self.screen.blit(instructions_text, (screen_width // 2 - 180, screen_height // 2 + 10))
+        pygame.display.update()
+
+
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_q:
+                        pygame.quit()
+                        sys.exit()
+                    elif event.key == pygame.K_r:
+                        Game().run() #this means that the game will restart
+                        return
 
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit() #system exit
+                self.pause_menu() #refer to pause menu for next option instead of just quit
 
     def scroll_background(self):
         self.scroll += self.car.speed
